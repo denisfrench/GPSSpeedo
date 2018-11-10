@@ -1,5 +1,5 @@
 /*
-GPSSpeedo by Denis French 20181027
+GPSSpeedo by Denis French 20181110
 Hacked together from:
 https://github.com/SlashDevin/NeoGPS/blob/master/examples/NMEAtimezone/NMEAtimezone.ino
 https://github.com/olikraus/u8g2/blob/master/sys/arduino/u8g2_full_buffer/FontUsage/FontUsage.ino
@@ -9,8 +9,8 @@ http://masteringarduino.blogspot.com/2013/10/fastest-and-smallest-digitalread-an
 //#define DEBUG // Comment out to disable serial debug output
 
 #define BAUD 115200 // Used for both GPS and serial debug output
-#define LEFT_PIN 2 // Interrupt enabled pin on Arduino Uno/Nano/Duemilanove
-#define RIGHT_PIN 3 // Interrupt enabled pin on Arduino Uno/Nano/Duemilanove
+#define LEFT_IN_PIN 2 // Interrupt enabled pin on Arduino Uno/Nano/Duemilanove
+#define RIGHT_IN_PIN 3 // Interrupt enabled pin on Arduino Uno/Nano/Duemilanove
 #define RESET_PIN 8 // Arduino pin connected to SSD1306 RST (not Arduino reset)
 #define DC_PIN 9 // Arduino pin connected to SSD1306 DC
 #define CS_PIN U8X8_PIN_NONE // Not connected
@@ -64,12 +64,12 @@ uint16_t speed_kph = 0;
 /* Interrupt functions disabled
 void leftISR()
 {
-  leftOn = digitalRead(LEFT_PIN);
+  leftOn = digitalRead(LEFT_IN_PIN);
 }  // leftISR
 
 void rightISR()
 {
-  rightOn = digitalRead(RIGHT_PIN);
+  rightOn = digitalRead(RIGHT_IN_PIN);
 }  // leftISR
 */
 
@@ -115,6 +115,9 @@ static void doSomeWork()
     #ifdef DEBUG
       DEBUG_PORT << fix.dateTime;
       DEBUG_PORT.print(F(" UTC "));
+      if (!fix.valid.speed) {
+        DEBUG_PORT.println(F(" [no speed fix]"));
+      }
       DEBUG_PORT.flush();
     //DEBUG_PORT.println();
     #endif
@@ -125,6 +128,9 @@ static void doSomeWork()
   // Set speed
   if (fix.valid.speed) {
     #ifdef DEBUG
+      if (!fix.valid.date || !fix.valid.time) {
+        DEBUG_PORT.print(F("[No date-time fix] "));
+      }
       DEBUG_PORT.print(u8x8_u8toa(fix.spd.whole, 3));
       DEBUG_PORT.print(F("."));
       DEBUG_PORT.print(u8x8_u16toa(fix.spd.frac, 3));
@@ -140,7 +146,7 @@ static void doSomeWork()
   } // Set speed
 
   // Print left arrow if leftOn == true
-  if (isHigh(LEFT_PIN)) {
+  if (isHigh(LEFT_IN_PIN)) {
     u8g2.clearBuffer(); // Can't clear screen with overtype of spaces?!?
     u8g2.setFont(u8g2_font_open_iconic_arrow_8x_t);
     u8g2.drawGlyph(0,63,73); // Left arrow glyph of above font
@@ -154,7 +160,7 @@ static void doSomeWork()
   } // leftOn
 
   // Print right arrow if righOn == true
-  else if (isHigh(RIGHT_PIN)) {
+  else if (isHigh(RIGHT_IN_PIN)) {
     u8g2.clearBuffer(); // Can't clear screen with overtype of spaces?!?
     u8g2.setFont(u8g2_font_open_iconic_arrow_8x_t);
     u8g2.drawGlyph(64,63,74); // Right arrow glyph of above font
@@ -231,13 +237,13 @@ static void GPSloop()
 void setup()
 {
   /* Interrupt functions disabled
-  pinMode(LEFT_PIN, INPUT);
-  pinMode(RIGHT_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(LEFT_PIN), leftISR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(RIGHT_PIN), rightISR, CHANGE);
+  pinMode(LEFT_IN_PIN, INPUT);
+  pinMode(RIGHT_IN_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(LEFT_IN_PIN), leftISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(RIGHT_IN_PIN), rightISR, CHANGE);
   */
-  pinAsInput(LEFT_PIN);
-  pinAsInput(RIGHT_PIN);
+  pinAsInput(LEFT_IN_PIN);
+  pinAsInput(RIGHT_IN_PIN);
 
   u8g2.begin();
   gpsPort.begin(BAUD);
